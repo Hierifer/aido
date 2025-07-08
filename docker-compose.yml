@@ -30,7 +30,7 @@ services:
     networks:
       - CORE-NETWORK  # 使用 CORENETWORK 网络
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl http://localhost:8080/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -46,8 +46,11 @@ services:
       - "3000:3000"  # 端口映射：宿主机 3000 → 容器 3000
     environment:
       - DB_HOST=db  # 环境变量配置
+      - DB_NAME=mydb
       - DB_USER=admin
       - DB_PASSWORD=123123123
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=redispassword123
     networks:
       - CORE-NETWORK  # 使用 CORENETWORK 网络
     depends_on:
@@ -63,27 +66,46 @@ services:
   # 数据库服务
   db:
     image: mysql:8.0  # 使用官方 MySQL 镜像
+    ports:
+      - "3306:3306"  # 端口映射：宿主机 3306 → 容器 3306
     volumes:
       - db-data:/var/lib/mysql  # 持久化数据卷
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql  # 初始化脚本
     environment:
-      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=root123456
       - MYSQL_DATABASE=mydb
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=123123123
     networks:
       - CORE-NETWORK  # 使用 CORENETWORK 网络
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d mydatabase"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123456"]
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 10s
+      start_period: 45s
 
   redis:
     image: redis:alpine  # 使用官方 Redis 镜像
+    ports:
+      - "6379:6379"  # 端口映射：宿主机 6379 → 容器 6379
+    command: redis-server --requirepass redispassword123 --appendonly yes --protected-mode yes --port 6379 --bind 0.0.0.0
+    environment:
+      - REDIS_PASSWORD=redispassword123
+    volumes:
+      - redis-data:/data  # 持久化数据
     networks:
       - CORE-NETWORK  # 使用 CORENETWORK 网络
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redispassword123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   db-data:  # 定义数据卷
+  redis-data:  # Redis 数据卷
 
 networks:
   CORE-NETWORK:  # 定义网络
