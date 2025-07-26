@@ -6,15 +6,16 @@ import { MessageBubble } from './components/MessageBubble';
 import { ChatInput } from './components/ChatInput';
 import { LoadingIndicator } from './components/LoadingIndicator';
 import { ChatHeader } from './components/ChatHeader';
+import ASRVoiceRecorder from './components/ASRVoiceRecorder';
 import { aiService } from './services/aiService';
 import { useChatHistory } from './hooks/useChatHistory';
-import { useWebSocket } from './hooks/useWebSocket';
+// import { useWebSocket } from './hooks/useWebSocket';
 
 export default function ChatPage() {
   const { messages, addMessage, clearHistory } = useChatHistory();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  // const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -25,7 +26,8 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // WebSocket 处理函数
+  // WebSocket 处理函数 (暂时注释掉)
+  /*
   const handleMessageReceived = (message: Message) => {
     addMessage(message);
   };
@@ -43,8 +45,10 @@ export default function ChatPage() {
       });
     }
   };
+  */
 
-  // 初始化 WebSocket
+  // 初始化 WebSocket (暂时注释掉)
+  /*
   const {
     connected,
     connecting,
@@ -58,6 +62,17 @@ export default function ChatPage() {
     onMessageReceived: handleMessageReceived,
     onTypingChange: handleTypingChange,
   });
+  */
+
+  // 临时模拟 WebSocket 状态
+  const connected = false;
+  const connecting = false;
+  const wsError = null;
+  const onlineUsers = 0;
+  const connect = () => {};
+  // const sendMessage = () => {};
+  // const sendTyping = () => {};
+  // const sendVoiceMessage = () => {};
 
   const connectionState = {
     connected,
@@ -76,13 +91,18 @@ export default function ChatPage() {
       timestamp: new Date(),
     };
 
-    // 如果 WebSocket 连接，通过 WebSocket 发送
+    // 如果 WebSocket 连接，通过 WebSocket 发送 (暂时注释掉)
+    /*
     if (connected) {
       sendMessage(userMessage);
     } else {
       // 否则添加到本地消息列表
       addMessage(userMessage);
     }
+    */
+    
+    // 暂时直接添加到本地消息列表
+    addMessage(userMessage);
 
     const currentInput = input;
     setInput('');
@@ -128,7 +148,8 @@ export default function ChatPage() {
       duration,
     };
 
-    // 如果 WebSocket 连接，通过 WebSocket 发送语音消息
+    // 如果 WebSocket 连接，通过 WebSocket 发送语音消息 (暂时注释掉)
+    /*
     if (connected) {
       sendVoiceMessage(audioData, duration);
     } else {
@@ -154,15 +175,79 @@ export default function ChatPage() {
         setIsLoading(false);
       }
     }
+    */
+    
+    // 暂时直接添加到本地消息列表
+    addMessage(voiceMessage);
+    
+    // 模拟 AI 对语音消息的响应
+    setIsLoading(true);
+    try {
+      const aiResponse = await aiService.getResponse(`用户发送了一条${duration}秒的语音消息`);
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: aiResponse,
+        timestamp: new Date(),
+      };
+
+      addMessage(aiMessage);
+    } catch (error) {
+      console.error('Error getting AI response for voice:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // 输入变化时发送打字状态
+  // 处理语音识别的文本发送
+  const handleASRTextSend = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: text,
+      timestamp: new Date(),
+    };
+
+    addMessage(userMessage);
+    setIsLoading(true);
+
+    try {
+      const aiResponse = await aiService.getResponse(text);
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: aiResponse,
+        timestamp: new Date(),
+      };
+
+      addMessage(aiMessage);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '抱歉，我遇到了一些问题。请稍后再试。',
+        timestamp: new Date(),
+      };
+      addMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 输入变化时发送打字状态 (暂时注释掉 WebSocket 部分)
   const handleInputChange = (value: string) => {
     setInput(value);
     
+    /*
     if (connected) {
       sendTyping(value.length > 0);
     }
+    */
   };
 
   return (
@@ -178,7 +263,7 @@ export default function ChatPage() {
           {/* Chat Controls */}
           <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              对话历史将自动保存 {connected && '• 实时同步'}
+              对话历史将自动保存 {/* {connected && '• 实时同步'} */}
             </div>
             <button
               onClick={clearHistory}
@@ -194,7 +279,8 @@ export default function ChatPage() {
               <MessageBubble key={message.id} message={message} />
             ))}
             
-            {/* 显示其他用户正在输入 */}
+            {/* 显示其他用户正在输入 (暂时注释掉，因为没有 WebSocket) */}
+            {/*
             {typingUsers.size > 0 && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
@@ -211,11 +297,20 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
+            */}
             
             {/* Loading indicator */}
             {isLoading && <LoadingIndicator />}
             
             <div ref={messagesEndRef} />
+          </div>
+
+          {/* ASR Voice Recorder */}
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <ASRVoiceRecorder 
+              onSendMessage={handleASRTextSend}
+              disabled={isLoading}
+            />
           </div>
 
           {/* Input Area */}
